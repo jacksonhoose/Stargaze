@@ -1,8 +1,15 @@
 /* helper function for creating HTML elements */
-function createElement(element, classes){
+function createElement(element, classes, styles){
    var el = document.createElement(element);
+   
    if(classes){
-      el.className = classes;
+      el.className = Array.isArray(classes) ? classes.join(' ') : classes;
+   }
+
+   if(styles){
+      for(var k in styles){
+         el.style[k] = styles[k];
+      }
    }
    return el;
 }
@@ -10,6 +17,9 @@ function createElement(element, classes){
 /* Star class */
 function Star(value){
    this.value = value;
+   this.el = null;
+   this.createHTML();
+   this.setCharacter(value);
 }
 
 Star.prototype.set = function(key, value){
@@ -18,24 +28,38 @@ Star.prototype.set = function(key, value){
    }
 };
 
+Star.prototype.resetCharacter = function(){
+   this.setCharacter(this.value);
+};
+
 Star.prototype.get = function(key){
    return this[key] ? this[key] : null;
 };
 
-Star.prototype.getHTML = function(starValue){
-   var span = createElement('span');
-   
-   span.innerHTML = (this.value === 0 || this.value === undefined) 
-      ? String.fromCharCode(9734) 
-      : String.fromCharCode(9733);
-   
-   span.style.color = 'gold';
-   
-   span.addEventListener('click', function(e){
-      console.log(e);
-      console.log(this.value);
-   }.bind(this), false);
-   return span;
+Star.prototype.setCharacter = function(value){
+   this.el.innerHTML = value < 1 ? String.fromCharCode(9734) : String.fromCharCode(9733);
+};
+
+Star.prototype.getEl = function(){
+   return this.el;
+};
+
+Star.prototype.createHTML = function(){
+   /* returns */
+   if(this.el === null){
+      /* make the element */
+      var element = createElement('span', null, { color: 'gold' });
+      /* save the element on the object */
+      this.el = element;
+   }
+};
+
+Star.prototype.addEvent = function(e, cb){
+   this.el.addEventListener(e, cb.bind(this), false);
+};
+
+Star.prototype.removeEvent = function(event, cb){
+   // this.el.removeEventListener(e, cb.bind(this), false);
 };
 
 /* Main class for creating star lists */
@@ -106,78 +130,86 @@ StarGaze.prototype.set = function(key, value){
 };
 
 StarGaze.prototype.getTargetDomNode = function(){
-   if(this.target instanceof jQuery) return;
    if(typeof this.target === 'string'){
       this.target = document.querySelector(this.target);
    }
 };
 
-StarGaze.prototype.createStars = function(){
+StarGaze.prototype.createStars = function(value){
    var i = this.options.minValue;
    var max = this.options.maxValue;
+   value = value === undefined ? this.value : value;
    var stars = this.get('stars');
 
    /* if stars are null they've never been created */
    if(stars === null){
       stars = [];
       for(; i < max; i++){
-         var val = i < this.value ? 1 : 0;
+         var val = i < value ? 1 : 0;
          stars.push(this.createStar(val));
       }
    } else {
       /* iterate over child child stars and set their value */
       for(; i < max; i++){
-         var val = i < this.value ? 1 : 0;
-         stars[i].set('value', val);
+         var val = i <= value ? 1 : 0;
+         stars[i].value = val;
+         stars[i].setCharacter(val);
       }
    }
 
-   this.set('stars', stars);
+   this.stars = stars;
 };
 
 StarGaze.prototype.getHTML = function(){
-   var container = createElement(this.options.containerTag, this.options.classes.containerClass);
+   /* create container */
+   var container = createElement(this.options.containerTag, this.options.classes.containerClass, {
+      display: 'inline-block'
+   });
    
-   container.style.display = 'inline-block';
-
+   /* append child nodes to container */
    this.get('stars').forEach(function(star){
-      var li = createElement('li');
-      li.style.display = 'inline-block';
-      li.style['margin-right'] = '2px';
-      li.appendChild(star.getHTML());
+
+      /* make an li */
+      var li = createElement('li', null, {
+         display: 'inline-block',
+         'margin-right': '2px'
+      });
+
+      /* append stars to LI's */
+      li.appendChild(star.getEl());
+
       container.appendChild(li);
-   })
+   });
 
    return this.container = container;
 };
 
 StarGaze.prototype.createStar = function(starValue){
-   return new Star(starValue);
-};
+   var star = new Star(starValue);
+   var self = this;
 
-StarGaze.prototype.mouseenter = function(e){
-   console.log('enetered');
+   /* bind events to each star node */
+   star.addEvent('mouseenter', function(e){
+      var index = self.get('stars').indexOf(this);
+      self.get('stars').forEach(function(star, i){
+         var val = i <= index ? 1 : 0;
+         star.setCharacter(val);
+      });
+   });
 
-};
+   star.addEvent('mouseleave', function(e){
+      self.get('stars').forEach(function(star){
+         star.resetCharacter();
+      });
+   });
 
-StarGaze.prototype.mouseleave = function(e){
-   console.log('mouseleave');
-};
+   star.addEvent('click', function(e){
+      var value = self.get('stars').indexOf(this);
+      self.value = value;
+      self.createStars();
+   });
 
-StarGaze.prototype.click = function(e){
-   console.log('click');
-   console.log(e);
-   console.log(this.createStar);
-};
-
-StarGaze.prototype.addEvents = function(){
-   this.container.addEventListener('mouseenter', this.mouseenter.bind(this), false);
-   this.container.addEventListener('mouseleave', this.mouseleave.bind(this), false);
-};
-
-StarGaze.prototype.removeEvents = function(){
-   this.container.addEventListener('mouseenter', this.mouseenter.bind(this), false);
-   this.container.addEventListener('mouseleave', this.mouseleave.bind(this), false);
+   return star;
 };
 
 StarGaze.prototype.render = function(target){
@@ -188,7 +220,6 @@ StarGaze.prototype.render = function(target){
    } else {
       target.appendChild(stars)
    }
-   this.addEvents();
 };
 
 

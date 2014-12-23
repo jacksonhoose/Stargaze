@@ -35,9 +35,6 @@ gulp.task('javascript', function() {
 			paths.src.js + '/app.js'
 		])
 		.pipe(concat('app.min.js'))
-		.pipe(uglify({
-			beautify: true
-		}))
 		.on('error', handleError)
 		.pipe(gulp.dest(paths.dist.js));
 });
