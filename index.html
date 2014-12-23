@@ -18,7 +18,13 @@
         <script>
             var x = new StarGaze(3, { 
                 el:'#target'
-            }).render();
+            });
+
+            x.render();
+
+            setInterval(function(){
+                console.log(x.get('value'));
+            }, 5000);
         </script>
     </body>
 </html>

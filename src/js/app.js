@@ -3,7 +3,9 @@ function createElement(element, classes, styles){
    var el = document.createElement(element);
    
    if(classes){
-      el.className = Array.isArray(classes) ? classes.join(' ') : classes;
+      el.className = Array.isArray(classes) 
+         ? classes.join(' ') 
+         : classes;
    }
 
    if(styles){
@@ -59,7 +61,7 @@ Star.prototype.addEvent = function(e, cb){
 };
 
 Star.prototype.removeEvent = function(event, cb){
-   // this.el.removeEventListener(e, cb.bind(this), false);
+   this.el.removeEventListener(e, cb.bind(this), false);
 };
 
 /* Main class for creating star lists */
@@ -151,7 +153,7 @@ StarGaze.prototype.createStars = function(value){
    } else {
       /* iterate over child child stars and set their value */
       for(; i < max; i++){
-         var val = i <= value ? 1 : 0;
+         var val = i < value ? 1 : 0;
          stars[i].value = val;
          stars[i].setCharacter(val);
       }
@@ -205,6 +207,7 @@ StarGaze.prototype.createStar = function(starValue){
 
    star.addEvent('click', function(e){
       var value = self.get('stars').indexOf(this);
+      value = value + 1;
       self.value = value;
       self.createStars();
    });
